@@ -14,7 +14,7 @@ function Demo() {
                         <Link className="bg-slate-600 xl:p-10 p-2 border rounded-xl w-60 h-60 flex flex-col justify-center items-center" to={'/Summary'} >
                         <p className="text-white text-3xl p-5">Magical codex</p>
                         </Link>
-                        <Link className="bg-slate-600 xl:p-10 p-2 border rounded-xl w-60 h-60 flex flex-col justify-center items-center" to={'/Summary'} >
+                        <Link className="bg-slate-600 xl:p-10 p-2 border rounded-xl w-60 h-60 flex flex-col justify-center items-center" to={'/Kernel'} >
                         <p className="text-white text-3xl p-5">Kernel</p>
                         </Link>
                         </div>
