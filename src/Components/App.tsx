@@ -7,6 +7,10 @@ import Kernel from '../Pages/Kernel'
 import TrainTest from '../Pages/TrainTest'
 import Model from '../Pages/Model'
 import Visualization from '../Pages/Visualization'
+import Counter from '../Pages/Counter'
+import Timer from '../Pages/Timer'
+import TextInput from '../Pages/TextInput'
+
 
 
 function App() {
@@ -22,6 +26,9 @@ function App() {
       <Route path='TrainTest' element={<TrainTest />} />
       <Route path='Model' element={<Model />} />
       <Route path='Visualize' element={<Visualization />} />
+      <Route path='Counter' element={<Counter />} />
+      <Route path='Timer' element={< Timer/>} />
+      <Route path='TextInput' element={<TextInput/>} />
   </Route>
   </Routes>
 </BrowserRouter>
