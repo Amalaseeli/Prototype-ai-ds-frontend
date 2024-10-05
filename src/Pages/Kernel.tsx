@@ -16,19 +16,23 @@ function Kernel() {
     const [unselectedColumns, setUnselectedColumns] = useState<string[]>([]);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/datasets') // 127.0.0.1 l === local
-            .then(response => {
-                setDatasets(response.data);
-                console.log("datasets", datasets)
-            })
-            .catch(error => {
-                console.error('Error fetching datasets:', error)
-            });
+        if (!selectedDataset) {
+            axios.get('http://localhost:5000/datasets') // 127.0.0.1 l === local
+                .then(response => {
+                    setDatasets(response.data);
+                    console.log("datasets", datasets)
+                })
+                .catch(error => {
+                    console.error('Error fetching datasets:', error)
+                });
+            if (!featureColumns) {
+                axios.get('http://localhost:5000/features')
+                    .then(response => setFeatureColumns(new Set(response.data.features)))
+                    .catch(error => console.error('Error fetching feature columns:', error));
+                }
+            }
 
-        axios.get('http://localhost:5000/features')
-            .then(response => setFeatureColumns(new Set(response.data.features)))
-            .catch(error => console.error('Error fetching feature columns:', error));
-    }, []);
+    }, [featureColumns, selectedDataset]);
 
     const fetchDataset = () => {
         if (!selectedDataset) {
@@ -108,8 +112,8 @@ function Kernel() {
                 </div>
 
                 <div>
-                    <select className="text-black text-xl w-[30%] h-10 rounded-lg bg-slate-200 pl-3 border border-slate-800 mr-5 mb-5"   onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedDataset(e.target.value)}
-                        >
+                    <select className="text-black text-xl w-[30%] h-10 rounded-lg bg-slate-200 pl-3 border border-slate-800 mr-5 mb-5" onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedDataset(e.target.value)}
+                    >
 
                         <optgroup label="Choose a dataset">
                             <option disabled hidden selected>Select a dataset</option>
