@@ -1,208 +1,107 @@
-import { useState, useEffect, ChangeEvent } from "react";
-import axios from 'axios';
+import axios from "axios"
+import { ChangeEvent, useEffect, useState } from "react"
 
+function TrainTest() {
+    const [trainPercentage, setTrainPercentage] = useState<number>(0)
+    const [testPercentage, setTestPercentage] = useState<number>(0)
+    const [error, setError] = useState('');
+    const [accuracy, setAccuracy] = useState<number | null>(null)
 
-interface DatasetRow {
-    id: number;
-    name: string;
-    value: number;
-}
-
-function Kernel() {
-    const [datasets, setDatasets] = useState<string[]>([]);
-    const [selectedDataset, setSelectedDataset] = useState<string>("");
-    const [datasetRows, setDatasetRows] = useState<DatasetRow[]>([]);
-    const [selectedColumns, setSelectedColumns] = useState<Set<string>>(
-        new Set()
-    );
-    const [featureColumns, setFeatureColumns] = useState<Set<string>>(new Set());
-    const [unselectedColumns, setUnselectedColumns] = useState<string[]>([]);
-
-    useEffect(() => {
-        if (!selectedDataset) {
-            axios
-                .get("http://127.0.0.1:5000/datasets")
-                .then((response) => {
-                    setDatasets(response.data);
-                    console.log("datasets", datasets);
-                })
-
-                .catch((error) => {
-                    console.error("Error fetching dataset", error);
-                });
-
-        }
-        if (!featureColumns) {
-            axios
-                .get("http://127.0.0.1:5000/features")
-                .then((response) => setFeatureColumns(new Set(response.data.features)))
-                .catch((error) => {
-                    console.error("Error fetching dataset", error);
-                });
-
-        }
-    }, [featureColumns, selectedDataset]);
-
-    const featchDataset = () => {
-        const formData = new FormData();
-        formData.append('dataset_name', selectedDataset)
-
-        axios
-            .post("http://127.0.0.1:5000/datasets", formData)
-            .then((response) => {
-                if (response.data.error) {
-                    console.error("Error:", response.data.error);
-                }
-                else {
-                    const rows: DatasetRow[] = JSON.parse(response.data.data);
-                    setDatasetRows(rows)
-                }
-            })
-            .catch((error) => console.error("Error fetching dataset:", error));
-
-
+    const handleTrainChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setTrainPercentage(e.target.valueAsNumber)
+        console.log(e.target.valueAsNumber)
     }
 
+    const handleTestChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setTestPercentage(e.target.valueAsNumber)
+        console.log(e.target.valueAsNumber)
+    }
 
-    const fetchUnselectedColumns = () => {
-        const formData = new FormData();
-        formData.append("dataset_name", selectedDataset);
+    const onSplitModel = async () => {
+        console.log("split button pushed")
+        if ((trainPercentage || 0) + (testPercentage || 0) != 100) {
+            setError("The sum of train and test percentages must be 100.");
+            return;
+        }
+        try {
+            const trainFraction = (trainPercentage || 0) / 100;
+            const testFraction = (testPercentage || 0) / 100;
+            const response = await axios.post("http://localhost:5000/split_data", {
+                'trainPercentage': trainFraction,
+                'testPercentage': testFraction
+            });
+            console.log(response);
+            setError('');
+        }
+        catch (error) {
+            console.error("Error splitting data:", error);
+            setError("Error splitting data. Please try again.");
+        }
+    }
 
-        axios
-            .post("http://127.0.0.1:5000/get_unselected_columns", formData)
-            .then((response) => {
-                if (response.data.error) {
-                    console.error("Error:", response.data.error);
-                } else {
-                    setUnselectedColumns(response.data.unselected_columns);
-                    console.log(response.data.unselected_columns)
-                }
+    const onTrainModel = async () => {
+        console.log("Train button pushed")
+
+        axios.post('http://localhost:5000/train_test_model', { trainPercentage })
+            .then(response => {
+                setAccuracy(response.data.accuracy);
+                console.log('Model trained successfully:', response.data);
             })
-            .catch((error) =>
-                console.error("Error fetching unselected columns:", error)
-            );
-    };
-
-    const handleColumnSelection = (event: ChangeEvent<HTMLInputElement>) => {
-        const columnName = event.target.name;
-        setSelectedColumns((prev) => {
-            const newSelection = new Set(prev);
-            if (newSelection.has(columnName)) {
-                newSelection.delete(columnName);
-            } else {
-                newSelection.add(columnName);
-            }
-            return newSelection;
-        });
-    };
-
-    const saveSelectedColumns = () => {
-        const selected = Array.from(selectedColumns);
-        axios
-            .post("http://localhost:5000/features", { selected })
-            .then((response) => {
-                if (response.data.success) {
-                    console.log("Columns saved successfully");
-                    setFeatureColumns(new Set(response.data.features));
-                } else {
-                    console.error("Error saving columns:", response.data.error);
-                }
-            })
-            .catch((error) => console.error("Error saving columns:", error));
-    };
+            .catch(error => {
+                console.error('Error training model:', error.response ? error.response.data : error.message);
+            });
+    }
 
     return (
         <>
-            <div className=" text-white pl-20 pt-20">
-                <div className="flex mb-5">
-                    <img className="w-[60px]" src="./assets/images/kernel.png" alt="" />
-                    <p className="text-white text-4xl">&nbsp; Kernel</p>
+            <div className="pl-20 pt-20 pr-20 text-white max-w-fit">
+                <h1 className="text-3xl mb-10">
+                    <strong>Train and Test</strong>
+                </h1>
 
-                </div>
+                <div className="flex gap-5 h-min-[60vh] text-slate-800">
+                    <div className="p-4 w-4/12 bg-slate-200 rounded-xl">
+                        <h1 className="font-bold text-xl text-slate-800">
+                            Train
+                        </h1>
 
-                <div>
-                    <select className="text-black text-xl w-[30%] h-10 rounded-lg bg-slate-200 pl-3 border border-slate-800 mr-5 mb-5"
-                        onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                            setSelectedDataset(e.target.value)
-                        }>
-                        <optgroup label="Choose a dataset">
-                            <option disabled hidden selected>Select a dataset</option>
-                            {datasets.map((dataset) => (
-                                <option key={dataset} value={dataset}>
-                                    {dataset}
-                                </option>
-                            ))}
-                        </optgroup>
-                    </select>
-                    <button onClick={featchDataset} className="text-black border border-slate-800 pr-10 pl-10 h-10 rounded-lg bg-slate-300">Load Dataset</button>
-                    {datasetRows.length > 0 && (
-                        <table className="border-collapse border border-black">
-                            <thead>
-                                <tr>
-                                    {Object.keys(datasetRows[0]).map((column) => (
-                                        <th key={column} className="border px-4 py-2">
-                                            <label>
-                                                <input
-                                                    type="checkbox"
-                                                    name={column}
-                                                    onChange={handleColumnSelection}
-                                                    disabled={featureColumns.has(column)}
-                                                />
-                                                {column}
-
-                                            </label>
-                                        </th>
-                                    )
-                                    )}
-
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {datasetRows.map((row, rowIndex) => (
-                                    <tr key={rowIndex}>
-                                        {Object.values(row).map((value, colIndex) => (
-                                            <td key={colIndex} className="border px-4 py-2">
-                                                {value}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                    <button
-                        onClick={saveSelectedColumns}
-                        className="text-black border border-slate-800 pr-10 pl-10 h-10 rounded-lg bg-slate-300 mt-5"
-                    >
-                        Save Selection
-                    </button>
-
-                    <button
-                        onClick={fetchUnselectedColumns}
-                        className="text-black border border-slate-800 pr-10 pl-10 h-10 rounded-lg bg-slate-300 mt-5"
-                    >
-                        Load Target Column
-                    </button>
-
-                    {unselectedColumns.length > 0 && (
-                        <div className="mt-5">
-
-                            <h3 className="text-white text-xl">The target column:</h3>
-                            <ul>
-                                {unselectedColumns.map(column => (
-                                    <li key={column} className="text-white">
-                                        {column}
-                                    </li>
-                                ))}
-                            </ul>
+                        <div className="flex text-lg h-10 mb-5 mt-5">
+                            <label className="w-4/12">Train Percentage:</label>
+                            <input className="w-8/12 pl-3 border border-slate-800 rounded-lg"
+                                type="number"
+                                max={100}
+                                min={0}
+                                onChange={handleTrainChange} />
                         </div>
-                    )}
+                        <div className="flex h-10 mb-5 mt-5 text-lg ">
+                            <label className="w-4/12">Test Percentage:</label>
+                            <input className="w-8/12 pl-3 border border-slate-800 rounded-lg"
+                                type="number"
+                                max={100}
+                                min={0}
+                                onChange={handleTestChange} />
+                        </div>
+                        <button className="bg-slate-400 rounded-xl p-6  border border-slate-700 w-full text-xl border-10 mt-5 text-slate-800 "
+                            onClick={onSplitModel}
+                        >Split dataset
+                        </button>
+                        {error && <div style={{ color: 'red' }}>{error}</div>}
+                        <button className="bg-slate-400 rounded-xl p-6  border border-slate-700 w-full text-xl border-10 mt-5 text-slate-800 "
+                            onClick={onTrainModel}>
+                            Train and Test dataset
+                        </button>
 
-
+                        {accuracy && <div>Model Accuracy: {accuracy}</div>}
+                    </div>
+                    <div className="grid gap-4 w-8/12 bg-slate-200 rounded-xl p-4 justify-center">
+                        <h1 className="text-xl font-bold text-slate-800">Precision Recall</h1>
+                    </div>
                 </div>
+
+
+
             </div>
         </>
     )
-
 }
-export default Kernel
+export default TrainTest

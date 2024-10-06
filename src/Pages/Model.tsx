@@ -112,7 +112,7 @@ function model() {
             <h1>Hello!</h1>
             <h2>{selectedModel}</h2>
             <p>
-              <strong>Type:</strong>{modelDetails.model.type}
+              <strong>Type:</strong>{modelDetails.model.Type}
             </p>
             <p>
               <strong>Description:</strong>{modelDetails.model.description}
